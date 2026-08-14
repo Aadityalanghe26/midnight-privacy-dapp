@@ -1,120 +1,171 @@
 ﻿# Midnight Privacy dApp
 
-> A privacy-preserving voting system on the Midnight network — on-chain tallies are public, individual votes stay private via zero-knowledge proofs.
+> A privacy-preserving dApp on the Midnight network — on-chain tallies are publicly auditable, individual votes stay private via zero-knowledge proofs.
 
-[![CI](https://github.com/YOUR_GITHUB_USERNAME/YOUR_REPO_NAME/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_GITHUB_USERNAME/YOUR_REPO_NAME/actions/workflows/ci.yml)
+---
+
+## Initial Idea
+
+Most blockchain voting systems expose your vote publicly. Anyone can see who voted for what, enabling coercion and bribery.
+
+This project uses Midnight Network's zero-knowledge proofs to make votes genuinely private. The blockchain records *that* you voted and *which tally increased* — but never *which option you chose*. The proof is generated locally in your browser. A nullifier hash prevents double-voting while keeping your identity private.
+
+The result: vote tallies are fully auditable and tamper-proof, but individual choices are mathematically guaranteed to remain secret — not just hidden by policy.
+
+---
 
 ## Contract Address
 
-| Network | Address |
-|---------|---------|
-| Preview | [PASTE ADDRESS AFTER DEPLOY] |
-| Preprod | [PASTE ADDRESS AFTER DEPLOY] |
+| Network | Contract Address |
+|---------|-----------------|
+| Local devnet | `749e975e165abd69dd52f97c31202ad73175993ab046a3b6bb420b3e81d61a7d` |
+| Preview | *(deploy in progress)* |
+| Preprod | *(deploy in progress)* |
+
+---
 
 ## What This Does
 
-**Level 1:** A Compact counter contract with public ledger state and a private witness. Demonstrates the core ZK proof workflow — the caller proves they hold a valid positive witness, and the on-chain counter increments by 1. The witness value itself is never revealed.
+**Level 1 — Counter Contract (complete)**
+A Compact counter contract with public ledger state and a private witness. The caller proves they hold a valid positive witness; the on-chain counter increments by 1. The witness value is never revealed.
 
-**Level 4 (coming):** A private voting/poll system where vote tallies are publicly auditable on-chain but individual choices remain private. Nullifier-based double-vote prevention ensures one vote per identity per poll.
+**Level 2 — React Frontend (in progress)**
+React + Vite frontend with Lace wallet integration. The useWallet hook manages the connect/disconnect state machine.
+
+**Level 4 — Private Voting (planned)**
+A voting contract where tallies are on-chain and auditable, but individual choices stay private. Nullifier system prevents double-voting without revealing voter identity.
+
+
+---
 
 ## Privacy Model
 
-- **PUBLIC** (on-chain, visible to anyone): counter value; poll tallies; nullifier set (hashes only)
-- **PRIVATE** (private witness, never on-chain): the witness value; voter key; chosen option index
-- **PROVED without revealing**: that the caller holds a valid positive witness; that a voter has not previously voted in a given poll
+| Layer | Visibility |
+|-------|-----------|
+| Counter value / poll tallies | **Public** — on-chain, visible to anyone |
+| Nullifier set | **Public** — only hashes, not voter keys |
+| Private witness value | **Private** — never leaves your machine |
+| Voter key / chosen option | **Private** — proved without revealing |
+
+---
 
 ## Tech Stack
 
-- [Midnight Network](https://midnight.network) — privacy-preserving blockchain
-- [Compact](https://docs.midnight.network/compact/reference/compact-reference) — smart contract language
-- Node.js v22
-- Docker (proof server on port 6300)
-- React + Vite (Level 2+)
-- [Midnight.js SDK](https://docs.midnight.network) — browser ZK proof generation
-- Lace wallet (Level 2+)
-- GitHub Actions CI/CD
+| Layer | Technology |
+|-------|-----------|
+| Smart contracts | Compact on Midnight Network |
+| ZK proof generation | Midnight.js SDK + local proof server (Docker) |
+| Frontend | React 18 + Vite + TypeScript |
+| Wallet | Lace (Midnight extension) |
+| Testing | Vitest + fast-check (property-based) |
+| CI/CD | GitHub Actions |
+| Runtime | Node.js v22 |
+
+
+---
 
 ## Prerequisites
 
 | Tool | Version | Install |
 |------|---------|---------|
 | Node.js | v22+ | https://nodejs.org |
-| Docker Desktop | latest | https://www.docker.com/products/docker-desktop |
-| Compact compiler (`compactc`) | 0.31.0+ | See below |
+| Docker Desktop | latest | https://docker.com/products/docker-desktop |
+| Compact compiler (compactc) | 0.31.1+ | https://docs.midnight.network/getting-started/installation |
 | Lace wallet | latest | https://www.lace.io (Level 2+ only) |
 
-### Installing the Compact Compiler
-
-The Compact compiler is a native binary — **not** an npm package. Install it from the Midnight docs:
-
-```
-https://docs.midnight.network/getting-started/installation
-```
-
-After install, verify it works:
-
-```bash
-compactc --version
-```
-
-### Starting the Proof Server (Docker)
-
-```bash
-docker pull midnightnetwork/proof-server
-docker run -p 6300:6300 midnightnetwork/proof-server
-```
+---
 
 ## Setup
 
 ```bash
-# 1. Clone the repo
-git clone <your-repo-url>
+# 1. Clone
+git clone https://github.com/YOUR_USERNAME/midnight-privacy-dapp.git
 cd midnight-privacy-dapp
 
-# 2. Install Node.js dependencies
+# 2. Install dependencies
 npm install
 
-# 3. Compile the counter contract (requires compactc installed)
-compactc contracts/counter/counter.compact --output contracts/counter/artifacts/
+# 3. Compile the counter contract
+compactc contracts/counter/counter.compact contracts/counter/artifacts/
 
-# 4. (Level 2+) Start the proof server
-docker run -p 6300:6300 midnightnetwork/proof-server
-
-# 5. (Level 2+) Run the frontend dev server
-npm run dev --workspace=frontend
+# 4. Run tests
+npm test
 ```
+
+
+---
 
 ## Run Tests
 
 ```bash
-# Run all tests from root
 npm test
-
-# Run counter contract tests only
 npm test --workspace=contracts/counter
 ```
 
-All 5 counter contract tests pass:
-- `initial counter state is 0`
-- `increments counter by exactly 1 on valid witness`
-- `rejects invalid witness (zero) without changing counter state`
-- **Property 1**: increment is always exactly +1 regardless of witness value (100 runs)
-- **Property 2**: any witness ≤ 0 is always rejected, state unchanged (100 runs)
+All 5 tests pass:
 
-## CI/CD
+| Test | Type |
+|------|------|
+| Initial counter state is 0 | Unit |
+| Increments counter by exactly 1 on valid witness | Unit |
+| Rejects invalid witness (zero) without changing state | Unit |
+| Property 1: increment always exactly +1 | Property (100 runs) |
+| Property 2: any witness <= 0 always rejected | Property (100 runs) |
 
-GitHub Actions runs on every push and pull request:
-1. Installs Node.js v22
-2. Runs `npm ci`
-3. Compiles both contracts with `compactc`
-4. Runs the full test suite with `npm test`
 
-See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+---
 
-## Initial Idea
+## Project Structure
 
-[LEAVE PLACEHOLDER — I will fill this in manually]
+```
+midnight-privacy-dapp/
+├── contracts/
+│   ├── counter/
+│   │   ├── counter.compact       # Level 1 counter contract
+│   │   ├── counter.test.ts       # Unit + property tests
+│   │   └── artifacts/            # Compiled output (gitignored)
+│   └── voting/
+│       └── voting.compact        # Level 4 voting contract (planned)
+├── frontend/
+│   └── src/lib/
+│       ├── midnight-client.ts    # Midnight.js SDK wrapper
+│       ├── nullifier.ts          # Vote deduplication store
+│       └── index.ts              # Barrel export
+├── docs/
+├── .github/workflows/ci.yml
+└── README.md
+```
+
+
+---
 
 ## Screenshots
 
-[LEAVE PLACEHOLDER — I will add compile output and contract address screenshots]
+### All Tests Passing
+
+```
+ ✓ counter.test.ts (5)
+   ✓ counter.compact (3)
+     ✓ initial counter state is 0
+     ✓ increments counter by exactly 1 on valid witness
+     ✓ rejects invalid witness (zero) without changing counter state
+   ✓ counter.compact — property tests (2)
+     ✓ Property 1: increment is always exactly +1 regardless of witness value
+     ✓ Property 2: any witness <= 0 is always rejected, state unchanged
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+```
+
+### Local Devnet Deployment
+
+```
+✅ Contract deployed successfully!
+Contract Address: 749e975e165abd69dd52f97c31202ad73175993ab046a3b6bb420b3e81d61a7d
+Saved to .midnight-state.json
+```
+
+---
+
+## License
+
+MIT
