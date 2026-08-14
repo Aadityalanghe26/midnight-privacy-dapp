@@ -1,0 +1,25 @@
+// =============================================================================
+// counter.compact - Level 1 Counter Contract
+// =============================================================================
+// PRIVACY MODEL:
+//   PUBLIC  (on-chain, visible to anyone): counter value
+//   PRIVATE (never leaves user's machine): the witness value used to authorize increment
+//   PROVED without revealing: that the caller holds a valid positive witness
+// =============================================================================
+
+pragma language_version >= 0.23;
+
+import CompactStandardLibrary;
+
+// --- Public ledger state ---
+export ledger counter: Counter;
+
+// --- Private witness ---
+witness incrementWitness(): Uint<64>;
+
+// --- Increment circuit ---
+export circuit increment(): [] {
+  const w: Uint<64> = incrementWitness();
+  assert(w > 0, "Witness must be a positive integer");
+  counter.increment(1);
+}
