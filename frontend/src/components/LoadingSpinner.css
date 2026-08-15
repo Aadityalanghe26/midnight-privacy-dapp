@@ -1,0 +1,50 @@
+/* ============================================================
+   LoadingSpinner
+   ============================================================ */
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2, 0.5rem);
+  vertical-align: middle;
+}
+
+.spinner__ring {
+  border-radius: 50%;
+  border: 2px solid var(--color-border, #2a2a35);
+  border-top-color: var(--color-accent, #7c5cf6);
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+/* Sizes */
+.spinner--sm .spinner__ring {
+  width: 14px;
+  height: 14px;
+}
+
+.spinner--md .spinner__ring {
+  width: 20px;
+  height: 20px;
+}
+
+.spinner--lg .spinner__ring {
+  width: 32px;
+  height: 32px;
+  border-width: 3px;
+}
+
+.spinner__label {
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-secondary, #8888a8);
+}
