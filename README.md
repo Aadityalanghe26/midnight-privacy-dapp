@@ -2,7 +2,7 @@
 > Privacy-preserving Web3 dApp on Midnight Network.
 
 ## Live Demo
-**[https://benevolent-cassata-0c714a.netlify.app](https://benevolent-cassata-0c714a.netlify.app)**
+**[https://sparkly-biscochitos-b20a8a.netlify.app](https://sparkly-biscochitos-b20a8a.netlify.app)**
 
 ## Demo Video
 [https://www.loom.com/share/f2d97444793146cfba7090cd0aa72fbd](https://www.loom.com/share/f2d97444793146cfba7090cd0aa72fbd)
