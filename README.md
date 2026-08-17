@@ -6,7 +6,7 @@ A privacy-preserving Web3 dApp on the Midnight Network.
 
 ## Live Demo
 
-https://benevolent-cassata-0c714a.netlify.app
+**[https://benevolent-cassata-0c714a.netlify.app](https://benevolent-cassata-0c714a.netlify.app)**
 
 ## Demo Video
 
