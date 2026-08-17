@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+﻿import { useState, useCallback } from 'react';
 
 export type WalletStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
@@ -20,35 +20,41 @@ const INITIAL_STATE: WalletState = {
   error: null,
 };
 
+async function getLaceAPI(): Promise<any> {
+  const w = window as any;
+  if (w?.midnight?.mnLace) return await w.midnight.mnLace.enable();
+  if (w?.midnight?.enable) return await w.midnight.enable();
+  if (w?.midnight) return w.midnight;
+  return null;
+}
+
+async function getAddress(api: any): Promise<string> {
+  if (typeof api?.getAddress === 'function') return await api.getAddress();
+  if (typeof api?.coinPublicKey === 'string') return api.coinPublicKey;
+  if (api?.coinPublicKey) return String(api.coinPublicKey);
+  if (typeof api?.getUnshieldedAddress === 'function') return await api.getUnshieldedAddress();
+  return 'connected';
+}
+
 export function useWallet(): UseWallet {
   const [wallet, setWallet] = useState<WalletState>(INITIAL_STATE);
 
   const connect = useCallback(async () => {
     setWallet({ status: 'connecting', address: null, error: null });
-
     try {
-      const midnightProvider = (window as unknown as Record<string, unknown>).midnight;
-
-      if (!midnightProvider) {
-        throw new Error(
-          'Midnight wallet not found. Please install the Lace wallet extension.',
-        );
-      }
-
-      const api = await (midnightProvider as { enable: () => Promise<{ getAddress: () => Promise<string> }> }).enable();
-      const address = await api.getAddress();
-
+      const w = window as any;
+      if (!w?.midnight) throw new Error('Lace wallet not found. Install Lace and enable Midnight.');
+      const api = await getLaceAPI();
+      if (!api) throw new Error('Could not connect to Lace Midnight connector.');
+      const address = await getAddress(api);
       setWallet({ status: 'connected', address, error: null });
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to connect wallet.';
+      const message = err instanceof Error ? err.message : 'Failed to connect wallet.';
       setWallet({ status: 'error', address: null, error: message });
     }
   }, []);
 
-  const disconnect = useCallback(() => {
-    setWallet(INITIAL_STATE);
-  }, []);
+  const disconnect = useCallback(() => setWallet(INITIAL_STATE), []);
 
   return { wallet, connect, disconnect };
 }
