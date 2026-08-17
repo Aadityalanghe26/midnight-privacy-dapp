@@ -10,7 +10,7 @@ A privacy-preserving Web3 dApp on the Midnight Network.
 
 ## Demo Video
 
-PASTE VIDEO LINK AFTER RECORDING
+https://www.loom.com/share/f2d97444793146cfba7090cd0aa72fbd
 
 ---
 
