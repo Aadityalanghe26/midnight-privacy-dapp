@@ -1,47 +1,23 @@
-import { WalletConnector } from '../components/WalletConnector';
-import { CounterWidget } from '../components/CounterWidget';
+﻿import { WalletConnect } from '../components/WalletConnect';
+import { CircuitCall } from '../components/CircuitCall';
 
 export function CounterPage() {
   return (
-    <div className="container" style={{ paddingTop: 'var(--space-12)', paddingBottom: 'var(--space-12)' }}>
-      <header style={{ marginBottom: 'var(--space-10)' }}>
-        <h1
-          style={{
-            fontSize: 'var(--font-size-3xl)',
-            fontWeight: 700,
-            color: 'var(--color-text-primary)',
-            letterSpacing: '-0.02em',
-          }}
-        >
-          Midnight{' '}
-          <span style={{ color: 'var(--color-accent)' }}>Privacy dApp</span>
+    <main className='container' style={{ paddingTop: 'var(--space-8)', paddingBottom: 'var(--space-16)' }}>
+      <header style={{ marginBottom: 'var(--space-8)' }}>
+        <h1 style={{ fontSize: 'var(--text-3xl)', fontWeight: 700, marginBottom: 'var(--space-2)' }}>
+          Midnight Privacy dApp
         </h1>
-        <p
-          className="text-secondary"
-          style={{ marginTop: 'var(--space-2)', fontSize: 'var(--font-size-md)' }}
-        >
-          A zero-knowledge counter on the Midnight Network
-        </p>
+        <p className='text-secondary'>Zero-knowledge proofs on the Midnight Network</p>
       </header>
-
-      <main
-        style={{
-          display: 'grid',
-          gap: 'var(--space-6)',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-          maxWidth: '800px',
-        }}
-      >
-        <section aria-labelledby="wallet-heading">
-          <span id="wallet-heading" className="sr-only">Wallet connection</span>
-          <WalletConnector />
-        </section>
-
-        <section aria-labelledby="counter-heading">
-          <span id="counter-heading" className="sr-only">Counter widget</span>
-          <CounterWidget />
-        </section>
-      </main>
-    </div>
+      <section style={{ marginBottom: 'var(--space-8)' }}>
+        <h2 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-4)', color: 'var(--color-text-secondary)' }}>Wallet</h2>
+        <WalletConnect />
+      </section>
+      <section>
+        <h2 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-4)', color: 'var(--color-text-secondary)' }}>Counter Contract</h2>
+        <CircuitCall />
+      </section>
+    </main>
   );
 }
