@@ -1,4 +1,4 @@
-# Midnight Privacy dApp
+﻿# Midnight Privacy dApp
 
 A privacy-preserving Web3 dApp on the Midnight Network.
 
