@@ -1,25 +1,36 @@
 {
-  "name": "midnight-privacy-dapp",
-  "private": true,
-  "workspaces": [
-    "contracts/counter",
-    "contracts/voting",
-    "frontend"
-  ],
-  "engines": {
-    "node": ">=22"
-  },
-  "scripts": {
-    "test": "vitest run",
-    "test:watch": "vitest"
-  },
-  "devDependencies": {
-    "@testing-library/jest-dom": "6.4.6",
-    "@testing-library/react": "16.0.0",
-    "@testing-library/user-event": "14.5.2",
-    "fast-check": "3.22.0",
-    "jsdom": "24.1.1",
-    "typescript": "^5.4.5",
-    "vitest": "1.6.1"
-  }
+    "name":  "midnight-privacy-dapp",
+    "private":  true,
+    "workspaces":  [
+                       "contracts/counter",
+                       "contracts/voting",
+                       "frontend"
+                   ],
+    "engines":  {
+                    "node":  "\u003e=22"
+                },
+    "scripts":  {
+                    "test":  "vitest run",
+                    "test:watch":  "vitest",
+                    "dev":  "vite",
+                    "build":  "vite build",
+                    "preview":  "vite preview"
+                },
+    "devDependencies":  {
+                            "@testing-library/jest-dom":  "6.4.6",
+                            "@testing-library/react":  "16.0.0",
+                            "@testing-library/user-event":  "14.5.2",
+                            "fast-check":  "3.22.0",
+                            "jsdom":  "24.1.1",
+                            "typescript":  "^5.4.5",
+                            "vitest":  "1.6.1",
+                            "@vitejs/plugin-react":  "4.3.1",
+                            "vite":  "5.4.0",
+                            "@types/react":  "18.3.3",
+                            "@types/react-dom":  "18.3.0"
+                        },
+    "dependencies":  {
+                         "react":  "18.3.1",
+                         "react-dom":  "18.3.1"
+                     }
 }
