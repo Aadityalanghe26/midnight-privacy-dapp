@@ -1,11 +1,11 @@
-﻿# Midnight Privacy dApp
+# Midnight Privacy dApp
 > A privacy-preserving Web3 dApp on Midnight Network. ZK proofs generated in the browser - private witnesses never leave your device.
 
 ## Live Demo
 **[https://sparkly-biscochitos-b20a8a.netlify.app](https://sparkly-biscochitos-b20a8a.netlify.app)**
 
 ## Demo Video
-[https://www.loom.com/share/f2d97444793146cfba7090cd0aa72fbd](https://www.loom.com/share/f2d97444793146cfba7090cd0aa72fbd)
+[https://www.loom.com/share/2aaaead8d2b3410e89148bd47f86f9ff](https://www.loom.com/share/2aaaead8d2b3410e89148bd47f86f9ff)
 
 ## Contract Address
 | Network | Address |
