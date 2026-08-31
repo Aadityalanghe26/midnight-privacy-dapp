@@ -12,10 +12,16 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
-      - run: npm ci
-      - run: npx vitest run --project contracts --reporter=verbose
-      - run: npm run build --workspace=frontend
+
+      - name: Install dependencies
+        run: npm install --ignore-scripts
+
+      - name: Run contract test suite
+        run: npx vitest run --project contracts --reporter=verbose
+
+      - name: Build frontend
+        run: npx vite build --config frontend/vite.config.ts
