@@ -6,9 +6,6 @@
                        "contracts/voting",
                        "frontend"
                    ],
-    "engines":  {
-                    "node":  "\u003e=22"
-                },
     "scripts":  {
                     "test":  "vitest run",
                     "test:watch":  "vitest",
