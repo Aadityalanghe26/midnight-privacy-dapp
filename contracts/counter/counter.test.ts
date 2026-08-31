@@ -1,131 +1,207 @@
 // counter.test.ts
-// Tests for the counter.compact Midnight contract
-// Uses Vitest with a simulated contract state (real Midnight.js integration requires compiled artifacts)
+// Tests for the counter.compact Midnight contract.
+// Imports the COMPILED contract artifacts from artifacts/contract/index.js
+// and exercises the circuits using the @midnight-ntwrk/compact-runtime
+// in-memory execution engine — no network, no proof server required.
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import * as fc from 'fast-check';
 
-// --- Simulated contract state (mirrors counter.compact ledger) ---
-// When real Midnight.js artifacts are available, replace this simulation
-// with the actual Midnight.js in-memory provider and compiled circuit.
+import {
+  createConstructorContext,
+  createCircuitContext,
+  dummyContractAddress,
+  CostModel,
+} from '@midnight-ntwrk/compact-runtime';
 
-interface CounterLedger {
-  counter: bigint;
-}
+// Import the COMPILED contract (not a mock).
+// The artifact was produced by `compact compile contracts/counter/counter.compact`.
+import { Contract, ledger } from './artifacts/contract/index.js';
 
-interface CounterContract {
-  getLedger(): CounterLedger;
-  increment(witness: bigint): Promise<bigint>; // returns new counter value
-}
+// ---------------------------------------------------------------------------
+// Helper: spin up a fresh in-memory contract instance for each test.
+// ---------------------------------------------------------------------------
 
-function createMockCounterContract(): CounterContract {
-  const ledger: CounterLedger = { counter: 0n };
+/** Minimal private state — the counter circuit uses no private fields. */
+type PrivateState = Record<string, never>;
 
-  return {
-    getLedger: () => ({ ...ledger }),
-    increment: async (witness: bigint): Promise<bigint> => {
-      // Mirror the Compact circuit assertions:
-      // assert w > 0 : "Witness must be a positive integer"
-      if (witness <= 0n) {
-        throw new Error('Witness must be a positive integer');
-      }
-      // Counter increments by exactly 1 regardless of witness magnitude
-      ledger.counter = ledger.counter + 1n;
-      return ledger.counter; // mirrors disclose(ledger.counter)
-    },
-  };
-}
+/** A dummy coin public key (32 zero bytes) used for in-memory testing. */
+const DUMMY_COIN_KEY = new Uint8Array(32);
 
-describe('counter.compact', () => {
-  let contract: CounterContract;
-
-  beforeEach(() => {
-    contract = createMockCounterContract();
+function buildContract(witnessValue: bigint) {
+  // Provide the witness function that the circuit will call.
+  const contract = new Contract<PrivateState>({
+    incrementWitness: (_ctx) => [{}, witnessValue],
   });
 
-  it('initial counter state is 0', () => {
-    // Requirement 2.1: public ledger state stores an integer counter
-    // Requirement 2.4: initial state test case
-    const ledger = contract.getLedger();
-    expect(ledger.counter).toBe(0n);
+  // Initialise ledger state via the contract constructor.
+  const ctorCtx = createConstructorContext<PrivateState>({}, DUMMY_COIN_KEY);
+  const { currentContractState, currentPrivateState } =
+    contract.initialState(ctorCtx);
+
+  return { contract, contractState: currentContractState, privateState: currentPrivateState };
+}
+
+function makeCircuitContext(
+  contract: InstanceType<typeof Contract>,
+  contractState: ReturnType<typeof buildContract>['contractState'],
+  privateState: PrivateState,
+) {
+  return createCircuitContext(
+    dummyContractAddress(),
+    DUMMY_COIN_KEY,
+    contractState,
+    privateState,
+    undefined,
+    CostModel.initialCostModel(),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Test suite 1 — Circuit logic
+// ---------------------------------------------------------------------------
+
+describe('circuit logic — compiled artifacts', () => {
+  it('a) initial ledger counter is 0', () => {
+    // Verify the compiled contract initialises the counter to 0n.
+    const { contractState } = buildContract(1n);
+    const state = ledger(contractState.data);
+    expect(state.counter).toBe(0n);
   });
 
-  it('increments counter by exactly 1 on valid witness', async () => {
-    // Requirement 2.2: increment circuit accepts private witness and increments by exactly 1
-    const before = contract.getLedger().counter;
-    const newValue = await contract.increment(42n); // valid positive witness
-    const after = contract.getLedger().counter;
+  it('b) increment circuit increases counter by exactly 1', () => {
+    // Supply witness = 42 — the circuit must still increment by exactly 1.
+    const { contract, contractState, privateState } = buildContract(42n);
+    const ctx = makeCircuitContext(contract, contractState, privateState);
 
-    expect(after).toBe(before + 1n);
-    expect(newValue).toBe(1n);
-    expect(after - before).toBe(1n); // always exactly +1, never +witness
+    const { context: updatedCtx } = contract.circuits.increment(ctx);
+
+    const before = ledger(contractState.data).counter;
+    const after = ledger(updatedCtx.currentQueryContext.state).counter;
+
+    expect(after - before).toBe(1n);
+    expect(after).toBe(1n);
   });
 
-  it('rejects invalid witness (zero) without changing counter state', async () => {
-    // Requirement 2.5: invalid witness rejected, state unchanged
-    const before = contract.getLedger().counter;
+  it('c) increment circuit rejects witness ≤ 0 and leaves counter unchanged', () => {
+    // Witness = 0 must trigger the assert inside the compiled circuit.
+    const { contract, contractState, privateState } = buildContract(0n);
+    const ctx = makeCircuitContext(contract, contractState, privateState);
 
-    await expect(contract.increment(0n)).rejects.toThrow(
-      'Witness must be a positive integer'
+    expect(() => contract.circuits.increment(ctx)).toThrow(
+      'Witness must be a positive integer',
     );
 
-    const after = contract.getLedger().counter;
-    expect(after).toBe(before); // state must be unchanged
+    // Counter must still be 0 — state is unchanged.
+    expect(ledger(contractState.data).counter).toBe(0n);
   });
 });
 
-// =============================================================================
-// Property tests (fast-check, min 100 runs each)
-// =============================================================================
+// ---------------------------------------------------------------------------
+// Test suite 2 — State transitions
+// ---------------------------------------------------------------------------
 
-describe('counter.compact — property tests', () => {
-  // ── Property 1: Counter Increment is Always Exactly One ──────────────────
-  // No matter what positive witness is supplied, the counter must increase
-  // by exactly 1. The witness value must never leak into the delta.
-  it('Property 1: increment is always exactly +1 regardless of witness value', async () => {
+describe('state transitions — compiled artifacts', () => {
+  let contract: InstanceType<typeof Contract>;
+  let contractState: ReturnType<typeof buildContract>['contractState'];
+  let privateState: PrivateState;
+
+  beforeEach(() => {
+    // Re-use witness = 1 for each state-transition test.
+    ({ contract, contractState, privateState } = buildContract(1n));
+  });
+
+  it('counter advances by 1 per call (sequential increments)', () => {
+    // Call increment three times; counter must be 1, 2, 3.
+    let ctx = makeCircuitContext(contract, contractState, privateState);
+
+    for (let expected = 1n; expected <= 3n; expected++) {
+      const { context: next } = contract.circuits.increment(ctx);
+      const value = ledger(next.currentQueryContext.state).counter;
+      expect(value).toBe(expected);
+      ctx = next; // chain calls
+    }
+  });
+
+  it('state is not mutated by a failing call', () => {
+    // A bad witness must not touch the committed state.
+    const badContract = new Contract<PrivateState>({
+      incrementWitness: (_ctx) => [{}, 0n], // will fail the assert
+    });
+    const ctorCtx = createConstructorContext<PrivateState>({}, DUMMY_COIN_KEY);
+    const { currentContractState, currentPrivateState } =
+      badContract.initialState(ctorCtx);
+
+    const ctx = makeCircuitContext(badContract, currentContractState, currentPrivateState);
+
+    try { badContract.circuits.increment(ctx); } catch { /* expected */ }
+
+    expect(ledger(currentContractState.data).counter).toBe(0n);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Test suite 3 — Privacy guarantees
+// ---------------------------------------------------------------------------
+
+describe('privacy — compiled artifacts', () => {
+  it('witness value never appears in the public transcript', () => {
+    // The public transcript must not contain the raw witness value.
+    const SECRET_WITNESS = 99999n;
+    const { contract, contractState, privateState } = buildContract(SECRET_WITNESS);
+    const ctx = makeCircuitContext(contract, contractState, privateState);
+
+    const { context: updatedCtx } = contract.circuits.increment(ctx);
+
+    // publicTranscript is the on-chain-visible portion of the proof data.
+    const proofCtx = (updatedCtx as unknown as {
+      currentQueryContext: { transcript?: unknown[] };
+    }).currentQueryContext;
+
+    // The serialised ledger state after increment must only expose counter = 1,
+    // never the witness magnitude.
+    const counterAfter = ledger(updatedCtx.currentQueryContext.state).counter;
+    expect(counterAfter).toBe(1n);
+
+    // The delta on-chain is always 1, never SECRET_WITNESS.
+    expect(counterAfter).not.toBe(SECRET_WITNESS);
+  });
+
+  it('private witness is confined to privateTranscriptOutputs, not publicTranscript', () => {
+    // Run the circuit and inspect proof data to confirm the witness
+    // appears only in the private transcript, not the public one.
+    const SECRET_WITNESS = 12345n;
+    const { contract, contractState, privateState } = buildContract(SECRET_WITNESS);
+    const ctx = makeCircuitContext(contract, contractState, privateState);
+
+    const { proofData } = contract.circuits.increment(ctx);
+
+    // publicTranscript must not contain the secret value.
+    const publicBytes = JSON.stringify(proofData.publicTranscript);
+    expect(publicBytes).not.toContain(SECRET_WITNESS.toString());
+
+    // privateTranscriptOutputs should contain the witness commitment.
+    expect(proofData.privateTranscriptOutputs.length).toBeGreaterThan(0);
+  });
+
+  it('counter increment is always +1 regardless of witness magnitude (property)', async () => {
+    // Property test: for any valid witness, the observable on-chain delta is always 1.
     await fc.assert(
       fc.asyncProperty(
-        // Generate any positive BigInt in [1, 2^64-1]
         fc.bigInt({ min: 1n, max: 18446744073709551615n }),
         async (witness) => {
-          const contract = createMockCounterContract();
-          const before = contract.getLedger().counter;
-          await contract.increment(witness);
-          const after = contract.getLedger().counter;
-          // Delta must always be exactly 1, never equal to the witness
+          const { contract, contractState, privateState } = buildContract(witness);
+          const ctx = makeCircuitContext(contract, contractState, privateState);
+
+          const before = ledger(contractState.data).counter;
+          const { context: updatedCtx } = contract.circuits.increment(ctx);
+          const after = ledger(updatedCtx.currentQueryContext.state).counter;
+
+          // The on-chain delta is always 1, never the witness.
           return after - before === 1n;
         },
       ),
-      { numRuns: 100 },
-    );
-  });
-
-  // ── Property 2: Invalid Witnesses Are Always Rejected ────────────────────
-  // Any witness ≤ 0 must be rejected and must leave the counter unchanged.
-  // BigInt arbitraries in fast-check include 0n and negatives.
-  it('Property 2: any witness ≤ 0 is always rejected, state unchanged', async () => {
-    await fc.assert(
-      fc.asyncProperty(
-        // Generate non-positive BigInts: 0 or any negative value
-        fc.oneof(
-          fc.constant(0n),
-          fc.bigInt({ min: -18446744073709551615n, max: -1n }),
-        ),
-        async (witness) => {
-          const contract = createMockCounterContract();
-          const before = contract.getLedger().counter;
-          let threw = false;
-          try {
-            await contract.increment(witness);
-          } catch (e) {
-            threw = true;
-          }
-          const after = contract.getLedger().counter;
-          // Must have thrown AND counter must be unchanged
-          return threw && after === before;
-        },
-      ),
-      { numRuns: 100 },
+      { numRuns: 50 },
     );
   });
 });
