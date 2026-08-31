@@ -5,7 +5,7 @@
 **[https://sparkly-biscochitos-b20a8a.netlify.app](https://sparkly-biscochitos-b20a8a.netlify.app)**
 
 ## Demo Video
-[https://www.loom.com/share/2aaaead8d2b3410e89148bd47f86f9ff](https://www.loom.com/share/2aaaead8d2b3410e89148bd47f86f9ff)
+[https://www.loom.com/share/7a3a71a530f547dbbc9a2338409a4f39](https://www.loom.com/share/7a3a71a530f547dbbc9a2338409a4f39)
 
 ## Contract Address
 | Network | Address |
