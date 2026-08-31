@@ -1,22 +1,11 @@
 import { useState, useCallback, useEffect } from 'react';
+import { getCounterState, increment as sdkIncrement } from '../lib/midnight-client';
 
 // ---------------------------------------------------------------------------
-// Mock internals — real SDK wiring comes in a later level
+// Deployed contract address on Midnight Preprod
 // ---------------------------------------------------------------------------
-
-let _mockCounter: bigint = 0n;
-
-async function mockGetCounter(): Promise<bigint> {
-  // Simulate a short network delay
-  await new Promise<void>((resolve) => setTimeout(resolve, 150));
-  return _mockCounter;
-}
-
-async function mockIncrement(witness: bigint): Promise<bigint> {
-  await new Promise<void>((resolve) => setTimeout(resolve, 800));
-  _mockCounter += witness;
-  return _mockCounter;
-}
+const CONTRACT_ADDRESS =
+  '749e975e165abd69dd52f97c31202ad73175993ab046a3b6bb420b3e81d61a7d';
 
 // ---------------------------------------------------------------------------
 // Hook interface
@@ -26,7 +15,8 @@ export interface UseCounter {
   counter: bigint | null;
   loading: boolean;
   error: string | null;
-  increment: (witness: bigint) => Promise<void>;
+  txHash: string | null;
+  increment: (witness: bigint, walletProvider?: unknown, accountId?: string) => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -38,16 +28,17 @@ export function useCounter(): UseCounter {
   const [counter, setCounter] = useState<bigint | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [txHash, setTxHash] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const value = await mockGetCounter();
+      const value = await getCounterState(CONTRACT_ADDRESS);
       setCounter(value);
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : 'Failed to fetch counter.';
+        err instanceof Error ? err.message : 'Failed to fetch counter state.';
       setError(message);
     } finally {
       setLoading(false);
@@ -55,7 +46,7 @@ export function useCounter(): UseCounter {
   }, []);
 
   const increment = useCallback(
-    async (witness: bigint) => {
+    async (witness: bigint, walletProvider?: unknown, accountId?: string) => {
       if (witness <= 0n) {
         setError('Witness value must be greater than 0.');
         return;
@@ -63,12 +54,20 @@ export function useCounter(): UseCounter {
 
       setLoading(true);
       setError(null);
+      setTxHash(null);
+
       try {
-        const newValue = await mockIncrement(witness);
-        setCounter(newValue);
+        const result = await sdkIncrement(
+          CONTRACT_ADDRESS,
+          witness,
+          walletProvider,
+          accountId ?? '',
+        );
+        setCounter(result.newValue);
+        setTxHash(result.txHash);
       } catch (err) {
         const message =
-          err instanceof Error ? err.message : 'Failed to increment counter.';
+          err instanceof Error ? err.message : 'Failed to call increment circuit.';
         setError(message);
       } finally {
         setLoading(false);
@@ -77,10 +76,10 @@ export function useCounter(): UseCounter {
     [],
   );
 
-  // Load counter on mount
+  // Load counter state on mount
   useEffect(() => {
     void refresh();
   }, [refresh]);
 
-  return { counter, loading, error, increment, refresh };
+  return { counter, loading, error, txHash, increment, refresh };
 }
