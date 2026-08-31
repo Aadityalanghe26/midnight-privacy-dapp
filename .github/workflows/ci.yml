@@ -24,10 +24,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Compile Compact contract
-        run: npx compact compile contracts/counter/counter.compact contracts/counter/artifacts
-
-      - name: Run test suite
+      # Compiled artifacts are committed to the repo (contracts/counter/artifacts/).
+      # The compact compiler is a local tool and is not available on the CI runner.
+      # Tests run directly against the committed compiled artifacts.
+      - name: Run contract test suite
         run: npx vitest run --project contracts --reporter=verbose
 
       - name: Build frontend
