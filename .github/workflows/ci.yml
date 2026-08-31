@@ -10,23 +10,12 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Node.js v22
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '22'
-
-      - name: Install dependencies
-        run: npm install --no-audit --prefer-offline || npm install --no-audit
-
-      # Compiled artifacts are committed to the repo (contracts/counter/artifacts/).
-      # Tests run directly against the committed compiled artifacts.
-      - name: Run contract test suite
-        run: npx vitest run --project contracts --reporter=verbose
-
-      - name: Build frontend
-        run: npm run build --workspace=frontend
+          cache: 'npm'
+      - run: npm ci
+      - run: npx vitest run --project contracts --reporter=verbose
+      - run: npm run build --workspace=frontend
