@@ -11,7 +11,7 @@ const mockUseWallet = useWallet as ReturnType<typeof vi.fn>;
 
 function setupMock(overrides: Partial<UseWallet>) {
   const defaults: UseWallet = {
-    wallet: { status: 'disconnected', address: null, error: null },
+    wallet: { status: 'disconnected', address: null, error: null, api: null },
     connect: vi.fn(),
     disconnect: vi.fn(),
   };
@@ -27,7 +27,7 @@ beforeEach(() => {
 describe('WalletConnector', () => {
   it('renders connect button when disconnected', () => {
     setupMock({
-      wallet: { status: 'disconnected', address: null, error: null },
+      wallet: { status: 'disconnected', address: null, error: null, api: null },
     });
     render(<WalletConnector />);
     expect(screen.getByTestId('connect-btn')).toBeInTheDocument();
@@ -39,6 +39,7 @@ describe('WalletConnector', () => {
         status: 'connected',
         address: 'addr_midnight_test_abc123',
         error: null,
+        api: null,
       },
     });
     render(<WalletConnector />);
@@ -50,7 +51,7 @@ describe('WalletConnector', () => {
 
   it('shows install Lace link when window.midnight is absent', () => {
     setupMock({
-      wallet: { status: 'disconnected', address: null, error: null },
+      wallet: { status: 'disconnected', address: null, error: null, api: null },
     });
     render(<WalletConnector />);
     expect(screen.getByTestId('install-lace-link')).toBeInTheDocument();
@@ -58,7 +59,7 @@ describe('WalletConnector', () => {
 
   it('disables connect button while connecting', () => {
     setupMock({
-      wallet: { status: 'connecting', address: null, error: null },
+      wallet: { status: 'connecting', address: null, error: null, api: null },
     });
     render(<WalletConnector />);
     const btn = screen.getByTestId('connect-btn');
@@ -68,7 +69,7 @@ describe('WalletConnector', () => {
   it('calls connect when button is clicked', () => {
     const connect = vi.fn();
     setupMock({
-      wallet: { status: 'disconnected', address: null, error: null },
+      wallet: { status: 'disconnected', address: null, error: null, api: null },
       connect,
     });
     render(<WalletConnector />);
