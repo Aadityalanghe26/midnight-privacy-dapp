@@ -11,21 +11,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Install Node.js v22
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: Show Node and npm versions
-        run: node --version && npm --version
-
       - name: Install dependencies
-        run: npm install --ignore-scripts --no-audit 2>&1 || true && npm install --ignore-scripts --no-audit
+        run: npm install --ignore-scripts --no-audit
 
-      - name: Run contract tests
+      - name: Run contract test suite
         run: npx vitest run --project contracts --reporter=verbose
 
       - name: Build frontend
