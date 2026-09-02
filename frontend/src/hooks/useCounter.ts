@@ -1,28 +1,14 @@
 import { useState, useCallback, useEffect } from 'react';
 import { getCounterState, increment as sdkIncrement } from '../lib/midnight-client';
 
-// ---------------------------------------------------------------------------
-// Deployed contract address on Midnight Preprod
-// ---------------------------------------------------------------------------
-const CONTRACT_ADDRESS =
-  '749e975e165abd69dd52f97c31202ad73175993ab046a3b6bb420b3e81d61a7d';
-
-// ---------------------------------------------------------------------------
-// Hook interface
-// ---------------------------------------------------------------------------
-
 export interface UseCounter {
   counter: bigint | null;
   loading: boolean;
   error: string | null;
   txHash: string | null;
-  increment: (witness: bigint, walletProvider?: unknown, accountId?: string) => Promise<void>;
+  increment: (witness: bigint, walletApi: unknown) => Promise<void>;
   refresh: () => Promise<void>;
 }
-
-// ---------------------------------------------------------------------------
-// useCounter
-// ---------------------------------------------------------------------------
 
 export function useCounter(): UseCounter {
   const [counter, setCounter] = useState<bigint | null>(null);
@@ -34,7 +20,7 @@ export function useCounter(): UseCounter {
     setLoading(true);
     setError(null);
     try {
-      const value = await getCounterState(CONTRACT_ADDRESS);
+      const value = await getCounterState();
       setCounter(value);
     } catch (err) {
       const message =
@@ -46,23 +32,16 @@ export function useCounter(): UseCounter {
   }, []);
 
   const increment = useCallback(
-    async (witness: bigint, walletProvider?: unknown, accountId?: string) => {
+    async (witness: bigint, walletApi: unknown) => {
       if (witness <= 0n) {
         setError('Witness value must be greater than 0.');
         return;
       }
-
       setLoading(true);
       setError(null);
       setTxHash(null);
-
       try {
-        const result = await sdkIncrement(
-          CONTRACT_ADDRESS,
-          witness,
-          walletProvider,
-          accountId ?? '',
-        );
+        const result = await sdkIncrement(witness, walletApi);
         setCounter(result.newValue);
         setTxHash(result.txHash);
       } catch (err) {
@@ -76,7 +55,6 @@ export function useCounter(): UseCounter {
     [],
   );
 
-  // Load counter state on mount
   useEffect(() => {
     void refresh();
   }, [refresh]);
