@@ -22,6 +22,20 @@ jobs:
       - name: Install dependencies
         run: npm install --ignore-scripts --no-audit
 
+      # Compact compiler is not available on the CI runner.
+      # The compiled artifacts are committed to the repo at
+      # contracts/counter/artifacts/ and are verified by the test suite.
+      # To recompile locally: npx compact compile contracts/counter/counter.compact contracts/counter/artifacts
+      - name: Verify compiled contract artifacts exist
+        run: |
+          echo "Verifying compiled contract artifacts..."
+          test -f contracts/counter/artifacts/contract/index.js && echo "✓ contract/index.js" || (echo "✗ contract/index.js MISSING" && exit 1)
+          test -f contracts/counter/artifacts/contract/index.d.ts && echo "✓ contract/index.d.ts" || (echo "✗ contract/index.d.ts MISSING" && exit 1)
+          test -f contracts/counter/artifacts/keys/increment.prover && echo "✓ keys/increment.prover" || (echo "✗ keys/increment.prover MISSING" && exit 1)
+          test -f contracts/counter/artifacts/keys/increment.verifier && echo "✓ keys/increment.verifier" || (echo "✗ keys/increment.verifier MISSING" && exit 1)
+          test -f contracts/counter/artifacts/zkir/increment.bzkir && echo "✓ zkir/increment.bzkir" || (echo "✗ zkir/increment.bzkir MISSING" && exit 1)
+          echo "All artifacts present."
+
       - name: Run contract test suite
         run: npx vitest run --project contracts --reporter=verbose
 
