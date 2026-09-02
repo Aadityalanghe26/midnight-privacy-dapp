@@ -26,8 +26,8 @@ export function CircuitCall() {
       return;
     }
 
-    // Pass the real wallet API and address to the SDK call
-    await increment(w, wallet.api, wallet.address ?? '');
+    // Pass the real ConnectedAPI to the SDK call
+    await increment(w, wallet.api);
   }
 
   return (
@@ -35,8 +35,12 @@ export function CircuitCall() {
       <h2 style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-2)' }}>
         Counter Circuit
       </h2>
-      <p className='text-secondary' style={{ fontSize: 'var(--text-sm)', marginBottom: 'var(--space-4)' }}>
-        🔒 Private witness — proved without revealing your input
+      <p
+        className='text-secondary'
+        data-testid='privacy-label'
+        style={{ fontSize: 'var(--text-sm)', marginBottom: 'var(--space-4)' }}
+      >
+        🔒 Proved without revealing your input
       </p>
 
       <div style={{ textAlign: 'center', margin: 'var(--space-4) 0' }}>
@@ -74,24 +78,26 @@ export function CircuitCall() {
         />
         <button
           type='submit'
+          data-testid='circuit-btn'
           className='btn btn-primary'
           disabled={loading || wallet.status !== 'connected'}
           style={{ width: '100%', justifyContent: 'center' }}
         >
           {loading ? (
-            <>
+            <span data-testid='loading-state' style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <LoadingSpinner size='sm' />
-              <span style={{ marginLeft: 'var(--space-2)' }}>Generating ZK proof…</span>
-            </>
+              Generating ZK Proof in Browser…
+            </span>
           ) : (
             'Call Circuit'
           )}
         </button>
       </form>
 
-      {/* Only show confirmation once a real txHash comes back from the network */}
+      {/* Only show once a real txHash comes back from the Midnight network */}
       {txHash && (
         <div
+          data-testid='tx-result'
           style={{
             marginTop: 'var(--space-3)',
             padding: 'var(--space-3)',
