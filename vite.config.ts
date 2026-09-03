@@ -1,13 +1,15 @@
 ﻿import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import wasm from 'vite-plugin-wasm';
 
-// Root-level vite config — serves src/ as the Level 2 frontend
 export default defineConfig({
-  plugins: [react()],
-  root: '.',
+  plugins: [react(), wasm()],
   build: {
+    target: 'esnext',
     outDir: 'dist',
-    target: 'es2020',
+  },
+  optimizeDeps: {
+    exclude: ['@midnight-ntwrk/midnight-js-protocol'],
   },
   resolve: {
     alias: { '@': '/src' },
